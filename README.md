@@ -17,6 +17,13 @@
      # edk_utils.dll
      # edk.lib
      # edk_utils.lib
+    
+# To Run this project
+      step#1 :- Open Fourth_Main_GUI.py
+      step#2 :- Create or Load profile
+      step#3:-  Click on Train Button and start training and follow the instructions
+      step#4 :- After more than 50 trials you should click on Live Button which will create a model
+      step#5 :- Click on Start Button for live prediction of data but first provide 20 seconds neutral though data
 
 Accuracy Achieved from this model is about 60% which can be increased by applying Neural Network and Deep Learning Models
 Students or Developers can use this repository as a reference for their project they just need to change grid_searchcv() method in Second_ProcessData.py file to apply different models based on their requirement.
