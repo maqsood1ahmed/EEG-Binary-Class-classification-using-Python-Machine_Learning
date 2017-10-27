@@ -20,3 +20,5 @@
 
 Accuracy Achieved from this model is about .60% which can be increased by applying Neural Network and Deep Learning Models
 Students or Developers can use this repository as a reference for their project they just need to change grid_searchcv() method in Second_ProcessData.py file to apply different models based on their requirement.
+
+For Live_Prediction 5second data is taken to predict specific thought
