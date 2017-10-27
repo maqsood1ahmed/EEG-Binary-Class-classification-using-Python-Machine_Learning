@@ -1,3 +1,5 @@
+# Devloped By Muhammad Salman and Maqsood Ahmed
+
 # EEG-Binary-Class-classification-using-Python-SVM
 
 # Note:-
