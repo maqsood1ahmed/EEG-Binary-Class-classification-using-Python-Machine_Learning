@@ -9,7 +9,7 @@
          ==>sklearn for machine learning libraries here we are using SVM rbf functions
          ==>Emotiv SDK premium Edition 32bit version libraries 
 
-#For Data collection and live prediction following libraries are required which comes with Emotiv Epoc SDK Premium
+# For Data collection and live prediction following libraries are required which comes with Emotiv Epoc SDK Premium
      # edk.dll
      # edk_utils.dll
      # edk.lib
