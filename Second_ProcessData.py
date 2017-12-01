@@ -17,8 +17,9 @@ from sklearn.externals import joblib
 import pandas as pd 
 from sklearn.metrics import accuracy_score,classification_report
 import time
-
-
+from sklearn import cross_validation,preprocessing,neighbors
+from sklearn.pipeline import Pipeline, FeatureUnion
+import matplotlib.pyplot as plt
 class ProcessData:
         
         def __init__(self,profilepath,profilename):
@@ -60,11 +61,11 @@ class ProcessData:
                 #List frequency
                 delta = map(lambda x: x[L*1/Fs-1: L*4/Fs],frequency)
                 theta = map(lambda x: x[L*4/Fs-1: L*8/Fs],frequency)
-                alpha = map(lambda x: x[L*5/Fs-1: L*13/Fs],frequency)
+                alpha = map(lambda x: x[L*8/Fs-1: L*13/Fs],frequency) #from 8 instead of 5
                 beta = map(lambda x: x[L*13/Fs-1: L*30/Fs],frequency)
                 gamma = map(lambda x: x[L*30/Fs-1: L*50/Fs],frequency)
 
-                avg_frequency = np.mean(frequency) 
+                avg_frequency = np.mean(frequency)
                 
                 return delta,theta,alpha,beta,gamma,avg_frequency
 
@@ -95,43 +96,22 @@ class ProcessData:
                 return feature,avg_frequency
         
         def grid_searchcv(self,feature_with_labels,y):
+                #print(y)
+                ###For Equal Weiht
 
-                index_of_A = [1 for i in range(len(y)) if y[i] == 1]
-                index_of_B = [2 for i in range(len(y)) if y[i] == 2]
 
-                As = len(index_of_A)
-                Bs = len(index_of_B)
+                df = pd.DataFrame(feature_with_labels)
+                df = df.sort_values([140], ascending=[True])
+
+                X = np.array(df.drop([140], 1),dtype=np.float32)
+                y = np.array(df[140],dtype=np.uint8)
+
+                #scaler = preprocessing.StandardScaler()
+                #X = scaler.fit_transform(X)
+                #print(X)
                 
-                print('No of As ',As)
-                print('No of Bs ',Bs)
+                X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.1)
                 
-                take_this = 0
-                
-                if As<Bs:
-                        feature_with_labels = sorted(feature_with_labels, key=lambda entry: entry[2])
-                        take_this = As
-                elif As>Bs:
-                        feature_with_labels = sorted(feature_with_labels, key=lambda entry: entry[2],reverse=True)
-                        take_this = Bs
-
-                take_this = take_this*2
-
-                X = np.zeros((take_this,140),dtype="double")
-                
-                for i in range(0,take_this):
-                        X[i] = feature_with_labels[i][0:140]
-                
-                np.random.seed(0)
-                indices = np.random.permutation(len(X))
-                X_train = X[indices[:-20]]
-                y_train = y[indices[:-20]]
-                X_final_test = X[indices[-20:]]
-                y_final_test = y[indices[-20:]]
-
-                print('train length ==>',len(X_train),'     and test length==>',len(y_final_test))
-
-                X = X_train
-                y = y_train
                 
                 min_c = -5
                 max_c = 15
@@ -140,28 +120,48 @@ class ProcessData:
                 min_gamma = -10
                 max_gamma = 5
                 gamma_range = [2**i for i in range(min_gamma,max_gamma+1)]
-
+                
                 print("# Tuning hyper-parameters")
 
-                param_grid = dict(gamma=gamma_range, C=C_range)
+                param_grid = {'C' : C_range, 'gamma' : gamma_range}
                 cv = StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42)
-                grid = GridSearchCV(SVC(), param_grid=param_grid, cv=cv)  #####see page 1195 for SVM rbf gridsearch cv from http://scikit-learn.org/dev/_downloads/scikit-learn-docs.pdf
-                grid.fit(X, y)
+                clf = GridSearchCV(SVC(kernel='rbf'), param_grid=param_grid, cv=cv)  #####see page 1195 for SVM rbf gridsearch cv from http://scikit-learn.org/dev/_downloads/scikit-learn-docs.pdf
+                clf.fit(X_train, y_train)
+
+                print('Best score for X:', clf.best_score_)
+                print('Best C:',clf.best_estimator_.C) 
+                #print('Best Kernel:',clf.best_estimator_.kernel)
+                print('Best Gamma:',clf.best_estimator_.gamma)
                 
+                print('svm result ==> ',clf.score(X_test, y_test))
 
-                y_predict=grid.predict(X_final_test)
-                print('origianl',y_final_test,' predicted ',y_predict)
+                '''
+                print('#############################################')
+                k_range = range(1,31)
+                k_scores = []
+                for k in k_range:
+                        knn = neighbors.KNeighborsClassifier(n_neighbors = k, weights='uniform')
+                        scores = cross_validation.cross_val_score(knn, X_train, y_train, cv = 10, scoring='accuracy')
+                        k_scores.append(scores.mean())
+                print(k_scores)
+
+                plt.plot(k_range, k_scores)
+                plt.xlabel('value of k')
+                plt.ylabel('cross validated accuracy')
+                plt.show()
+                #trained_model = clf_knn.fit(X_train,y_train)
+                #print('knn result ==> ',trained_model.score(X_test,y_test))
+                '''
                 joblib.dump(clf, os.path.join(self.profile_path,self.profile_name+'_model.pkl'))
-
-                print(classification_report(y_final_test,y_predict))
-
-
                 
         def main_process(self):
                 self.original_df = pd.read_csv(os.path.join(self.profile_path,self.profile_name+'.csv'))
 
                 Trials = len(self.original_df['Trial_No'])/1664
-
+                
+                selected = 0
+                rejected = 0
+                
                 for trial in range(1,Trials+1):
                         
                         loc = self.original_df['Trial_No']==trial
@@ -186,19 +186,23 @@ class ProcessData:
 
                         rest_features[0],rest_avg_frequency     = self.get_feature(rest_all_channels_data)
                         action_features[0],action_avg_frequency = self.get_feature(action_all_channels_data)
-
-                        #if action_avg_frequency > rest_avg_frequency:
-                        print('Trial==>'+str(trial)+'  ##accepted' + 'with frequency '+str(action_avg_frequency) + 'and rest frequency is=>'+str(rest_avg_frequency))
-                        if (self.action_df['Label'].values)[0]=='A':
-                                self.labels.append(1)
-                                self.features.append(np.insert(action_features[0],140,1))
-                                
-                        elif (self.action_df['Label'].values)[0]=='B':
-                                self.labels.append(2)
-                                self.features.append(np.insert(action_features[0],140,2))
-                        #else:
-                        #        print('Trial==>'+str(trial)+'  ##rejected'+ 'with frequency '+str(action_avg_frequency) + 'and rest frequency is=>'+str(rest_avg_frequency))
+                        
+                        if action_avg_frequency < rest_avg_frequency:
+                                print('Trial==>'+str(trial)+'  ##accepted' + 'with frequency '+str(action_avg_frequency) + 'and rest frequency is=>'+str(rest_avg_frequency))
+                                if (self.action_df['Label'].values)[0]=='A':
+                                        self.labels.append(1)
+                                        self.features.append(np.insert(action_features[0],140,1))
+                                        selected = selected +1
                                         
+                                elif (self.action_df['Label'].values)[0]=='B':
+                                        self.labels.append(2)
+                                        self.features.append(np.insert(action_features[0],140,2))
+                                        selected = selected + 1
+                        else:
+                                print('Trial==>'+str(trial)+'  ##rejected'+ 'with frequency '+str(action_avg_frequency) + 'and rest frequency is=>'+str(rest_avg_frequency))
+                                rejected = rejected + 1
+                                        
+                print('selected = ',selected, ' and rejected =',rejected)                        
                 Store_Features = pd.DataFrame(columns = self.column_names)
                 
                 lab = 0
@@ -230,3 +234,5 @@ class ProcessData:
                                 
                 self.grid_searchcv(np.array(self.features),np.array(self.labels))
 
+#prd = ProcessData('C:\Users\maqsood ahmed\Desktop\project\Project_Source_Code\UsersData','username')
+#prd.main_process()
