@@ -1,7 +1,7 @@
 
-# Devloped By Muhammad Salman and Maqsood Ahmed
+# Devloped By Muhammad Salman, Fahad Shaikh and Maqsood Ahmed
 #
-# EEG-Binary-Class-classification-using-Python-SVM
+# EEG-Binary_Class_classification_using_Python_Machine_Learning
 
 # Note:-
       Following things should must be installed to run this project
