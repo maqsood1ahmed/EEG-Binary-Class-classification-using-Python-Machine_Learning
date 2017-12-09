@@ -1,7 +1,6 @@
 
 # Devloped By Muhammad Salman, Fahad Shaikh and Maqsood Ahmed
-#
-#
+
 # EEG-Binary_Class_classification_using_Python_Machine_Learning
 
 # Note:-
