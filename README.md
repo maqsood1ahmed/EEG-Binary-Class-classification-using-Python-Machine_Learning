@@ -1,5 +1,5 @@
 
-# Devloped By Muhammad Salman, Fahad Shaikh and Maqsood Ahmed
+# Devloped By Muhammad Salman, Fahad Shaikh and Maqsood Ahmed students of NED University of Engineering & Technology in Computer Science
 
 # EEG-Binary-Class-classification-using-Python-Machine_Learning
 
